@@ -58,6 +58,9 @@ export const Login = () => {
                                 <div>
                                     <label className="text-3xl font-bold text-green-500">Sign in to Account</label>
                                 </div>
+
+                                <hr className="mt-4 border-t-3 border-green-500 w-16 mx-auto"/>
+
                                 {/* Email */}
                                 <div>
                                     <div className="mt-2">
