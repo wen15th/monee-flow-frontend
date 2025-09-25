@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as React from "react";
 
-export const Register = () => {
+const Register = () => {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
@@ -169,3 +169,5 @@ export const Register = () => {
         </>
     );
 };
+
+export default Register;
