@@ -55,7 +55,8 @@ export const Login = () => {
 
     return (
         <>
-            <div className="mx-auto max-w-md overflow-hidden rounded-xl bg-white shadow-md md:max-w-2xl">
+            <div className="min-h-[720px] flex items-center justify-center">
+                <div className="mx-auto max-w-md overflow-hidden rounded-xl bg-white shadow-md md:max-w-2xl">
                 <div className="md:flex">
                     <div className="md:shrink-0">
                         <div className="w-full object-cover md:h-full md:w-96 p-8">
@@ -130,6 +131,7 @@ export const Login = () => {
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
         </>
     );
