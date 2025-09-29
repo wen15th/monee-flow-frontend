@@ -1,7 +1,104 @@
+import axios from "axios";
+import {useState, useEffect} from "react";
+import * as React from "react";
+
+interface Statement {
+    s3_key: string;
+    created_at: string;
+    transactions: number;
+    status: number; // e.g. "Completed"
+}
+
 const Upload = () => {
+
+    // const [file, setFile] = useState<File | null>(null);
+    const [statements, setStatements] = React.useState<Statement[]>([]);
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [success, setSuccess] = useState(false);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+
+        const selectedFile = e.target.files[0];
+        await handleUpload(selectedFile)
+        // Reset the input value so that selecting the same file again will still trigger onChange
+        e.target.value = "";
+    }
+
+    const handleUpload = async (file: File) => {
+        setError("");
+        setLoading(true);
+        setSuccess(false); // reset success before upload
+
+        const formData = new FormData();
+        formData.append("file", file!)
+        // TODO: qw debug
+        formData.append("user_id", "804659e9-6351-4723-b829-19a20f210bc6")
+        formData.append("bank", "TD")
+
+        try {
+            const res = await axios.post("http://localhost:8000/statements", formData, {
+                headers: {
+                    Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzNzU2YTI0Yi1iZDRjLTQ4OTctOGExNi0wOTY3ZjY4ZDljZjQiLCJleHAiOjE3NTkxNTk2MDJ9.zMzWe9ppv9cqDLsylGc6CXmzy6olcH9u1WAM8IWKHe4`,
+                },
+                // withCredentials: true,
+                onUploadProgress: (event) => {
+                    if (event.total) {
+                        const percent = Math.round((event.loaded * 100) / event.total);
+                        setProgress(percent);
+                    }
+                },
+            });
+
+            console.log("Upload success:", res.data);
+            setSuccess(true);
+        } catch (err) {
+            console.error(err);
+            setError("Network error");
+        } finally {
+            // 给个小延迟，避免“loading”一闪而过
+            setTimeout(() => {
+                setLoading(false);
+                setProgress(0);
+            }, 1000);
+        }
+    }
+
+    // Fetch user statements history
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const res = await fetch(
+                    "http://localhost:8000/statements?page=1&page_size=10",
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzNzU2YTI0Yi1iZDRjLTQ4OTctOGExNi0wOTY3ZjY4ZDljZjQiLCJleHAiOjE3NTkxNTk2MDJ9.zMzWe9ppv9cqDLsylGc6CXmzy6olcH9u1WAM8IWKHe4`, // 从 localStorage 或 context 获取
+                        },
+                    }
+                );
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    setError(err.detail || "Failed to fetch statements")
+                }
+
+                const data = await res.json();
+                setStatements(data.items);
+            } catch (err) {
+                console.error(err);
+                setError("Failed to load upload history");
+            }
+        };
+
+        fetchData().catch(console.error);
+    }, []);
+
     return (
         <>
-            <div className=" container max-w-[720px] mx-auto">
+            <div className="container max-w-[720px] mx-auto">
 
                 {/* Upload component */}
                 <div className="flex flex-col w-full border border-gray-200 rounded-xl p-10 bg-white shadow-sm">
@@ -27,16 +124,33 @@ const Upload = () => {
 
                         Drag and drop your CSV files here
 
-                        <input type="file" id="uploadFile" className="hidden" />
+                        <input type="file" id="uploadFile" className="hidden" onChange={handleFileChange} />
                         <p className="text-sm font-medium text-slate-400 mt-2">
                             Or click to browse and select files from your computer.
                         </p>
                         <button
                             onClick={() => document.getElementById("uploadFile")?.click()}
+                            disabled={loading}
                             className="mt-3 px-3 py-1 border border-gray-300 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-50"
                         >
-                            Browse Files
+                            {loading ? "Uploading..." : "Browse Files"}
                         </button>
+
+                        {/* Loading */}
+                        {loading && (
+                            <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                    className="bg-green-600 h-2 rounded-full"
+                                    style={{ width: `${progress}%` }}
+                                ></div>
+                            </div>
+                        )}
+                        {success && !loading && (
+                            <p className="mt-5 text-green-600 text-sm font-bold">✅ Upload completed successfully!</p>
+                        )}
+
+                        {/* Error */}
+                        {error && <p className="text-red-500 text-sm font-bold mt-5">{error}</p>}
                     </label>
                 </div>
 
@@ -48,16 +162,17 @@ const Upload = () => {
                     </div>
                     {/* Statement list */}
                     <ul role="list" className="divide-y divide-gray-100 overflow-y-auto">
+                        {statements.map((stmt) => (
                         <li className="flex justify-between py-3">
                             <div className="flex min-w-0 gap-x-2">
                                 <div className="h-10 flex flex-col justify-center">
                                     <img src="/src/assets/file.png" alt="" className="size-6 flex-none "/>
                                 </div>
                                 <div className="min-w-0 flex-auto">
-                                    <p className="text-sm/6 text-left font-semibold text-gray-900">Statement file 1.csv</p>
+                                    <p className="text-sm/6 text-left font-semibold text-gray-900">{stmt.s3_key}</p>
                                     <div className="flex flex-row gap-x-3">
-                                        <p className="text-xs/4 text-left text-gray-500">Aug 01, 2025</p>
-                                        <p className="text-xs/4 text-left text-gray-500">30 transactions</p>
+                                        <p className="text-xs/4 text-left text-gray-500">{stmt.created_at}</p>
+                                        <p className="text-xs/4 text-left text-gray-500">{stmt.transactions} transactions</p>
                                     </div>
                                 </div>
                             </div>
@@ -65,131 +180,11 @@ const Upload = () => {
                                 <div className="h-10 flex flex-col justify-center">
                                     <img src="/src/assets/tick-mark.png" alt="" className="size-5 "/>
                                 </div>
-                                <p className="text-sm/10 text-gray-600 ml-1">Completed</p>
+                                <p className="text-sm/10 text-gray-600 ml-1">{stmt.status == 1 ?"Completed" : "Processing" }</p>
                             </div>
                         </li>
-                        <li className="flex justify-between py-3">
-                            <div className="flex min-w-0 gap-x-2">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/file.png" alt="" className="size-6 flex-none "/>
-                                </div>
-                                <div className="min-w-0 flex-auto">
-                                    <p className="text-sm/6 text-left font-semibold text-gray-900">Statement file 1.csv</p>
-                                    <div className="flex flex-row gap-x-3">
-                                        <p className="text-xs/4 text-left text-gray-500">Aug 01, 2025</p>
-                                        <p className="text-xs/4 text-left text-gray-500">30 transactions</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="hidden shrink-0 md:flex-row sm:flex sm:flex-col sm:items-end">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/tick-mark.png" alt="" className="size-5 "/>
-                                </div>
-                                <p className="text-sm/10 text-gray-600 ml-1">Completed</p>
-                            </div>
-                        </li>
-                        <li className="flex justify-between py-3">
-                            <div className="flex min-w-0 gap-x-2">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/file.png" alt="" className="size-6 flex-none "/>
-                                </div>
-                                <div className="min-w-0 flex-auto">
-                                    <p className="text-sm/6 text-left font-semibold text-gray-900">Statement file 1.csv</p>
-                                    <div className="flex flex-row gap-x-3">
-                                        <p className="text-xs/4 text-left text-gray-500">Aug 01, 2025</p>
-                                        <p className="text-xs/4 text-left text-gray-500">30 transactions</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="hidden shrink-0 md:flex-row sm:flex sm:flex-col sm:items-end">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/tick-mark.png" alt="" className="size-5 "/>
-                                </div>
-                                <p className="text-sm/10 text-gray-600 ml-1">Completed</p>
-                            </div>
-                        </li>
-                        <li className="flex justify-between py-3">
-                            <div className="flex min-w-0 gap-x-2">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/file.png" alt="" className="size-6 flex-none "/>
-                                </div>
-                                <div className="min-w-0 flex-auto">
-                                    <p className="text-sm/6 text-left font-semibold text-gray-900">Statement file 1.csv</p>
-                                    <div className="flex flex-row gap-x-3">
-                                        <p className="text-xs/4 text-left text-gray-500">Aug 01, 2025</p>
-                                        <p className="text-xs/4 text-left text-gray-500">30 transactions</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="hidden shrink-0 md:flex-row sm:flex sm:flex-col sm:items-end">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/tick-mark.png" alt="" className="size-5 "/>
-                                </div>
-                                <p className="text-sm/10 text-gray-600 ml-1">Completed</p>
-                            </div>
-                        </li>
-                        <li className="flex justify-between py-3">
-                            <div className="flex min-w-0 gap-x-2">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/file.png" alt="" className="size-6 flex-none "/>
-                                </div>
-                                <div className="min-w-0 flex-auto">
-                                    <p className="text-sm/6 text-left font-semibold text-gray-900">Statement file 1.csv</p>
-                                    <div className="flex flex-row gap-x-3">
-                                        <p className="text-xs/4 text-left text-gray-500">Aug 01, 2025</p>
-                                        <p className="text-xs/4 text-left text-gray-500">30 transactions</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="hidden shrink-0 md:flex-row sm:flex sm:flex-col sm:items-end">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/tick-mark.png" alt="" className="size-5 "/>
-                                </div>
-                                <p className="text-sm/10 text-gray-600 ml-1">Completed</p>
-                            </div>
-                        </li>
-                        <li className="flex justify-between py-3">
-                            <div className="flex min-w-0 gap-x-2">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/file.png" alt="" className="size-6 flex-none "/>
-                                </div>
-                                <div className="min-w-0 flex-auto">
-                                    <p className="text-sm/6 text-left font-semibold text-gray-900">Statement file 1.csv</p>
-                                    <div className="flex flex-row gap-x-3">
-                                        <p className="text-xs/4 text-left text-gray-500">Aug 01, 2025</p>
-                                        <p className="text-xs/4 text-left text-gray-500">30 transactions</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="hidden shrink-0 md:flex-row sm:flex sm:flex-col sm:items-end">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/tick-mark.png" alt="" className="size-5 "/>
-                                </div>
-                                <p className="text-sm/10 text-gray-600 ml-1">Completed</p>
-                            </div>
-                        </li>
-                        <li className="flex justify-between py-3">
-                            <div className="flex min-w-0 gap-x-2">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/file.png" alt="" className="size-6 flex-none "/>
-                                </div>
-                                <div className="min-w-0 flex-auto">
-                                    <p className="text-sm/6 text-left font-semibold text-gray-900">Statement file 1.csv</p>
-                                    <div className="flex flex-row gap-x-3">
-                                        <p className="text-xs/4 text-left text-gray-500">Aug 01, 2025</p>
-                                        <p className="text-xs/4 text-left text-gray-500">30 transactions</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="hidden shrink-0 md:flex-row sm:flex sm:flex-col sm:items-end">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/tick-mark.png" alt="" className="size-5 "/>
-                                </div>
-                                <p className="text-sm/10 text-gray-600 ml-1">Completed</p>
-                            </div>
-                        </li>
+                        ))}
                     </ul>
-
                 </div>
             </div>
         </>
