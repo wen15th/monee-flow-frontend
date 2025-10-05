@@ -2,12 +2,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as React from "react";
+import { useAuth } from '../hooks/useAuth';
+
 
 export const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,7 +33,7 @@ export const Login = () => {
             });
 
             if (!res.ok) {
-                let message = "Login failed";
+                let message: string;
                 try {
                     const errorData = await res.json();
                     message = errorData.detail;
@@ -43,10 +46,11 @@ export const Login = () => {
 
             const data = await res.json();
             console.log("Login success:", data);
-            // TODO: Save token
+            // Save token
+            login(data.access_token);
 
             // Navigate to dashboard
-            navigate("/dashboard");
+            navigate("/upload");
         } catch (err) {
             console.error(err);
             setError("Network error");

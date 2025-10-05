@@ -1,8 +1,11 @@
 import axios from "axios";
 import {useState, useEffect} from "react";
 import * as React from "react";
+import { useAuth } from '../hooks/useAuth';
+
 
 interface Statement {
+    id: number,
     s3_key: string;
     created_at: string;
     transactions: number;
@@ -10,13 +13,13 @@ interface Statement {
 }
 
 const Upload = () => {
-
     // const [file, setFile] = useState<File | null>(null);
     const [statements, setStatements] = React.useState<Statement[]>([]);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [success, setSuccess] = useState(false);
+    const { accessToken } = useAuth();
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
@@ -34,14 +37,13 @@ const Upload = () => {
 
         const formData = new FormData();
         formData.append("file", file!)
-        // TODO: qw debug
-        formData.append("user_id", "804659e9-6351-4723-b829-19a20f210bc6")
         formData.append("bank", "TD")
 
         try {
+            // Upload statement
             const res = await axios.post("http://localhost:8000/statements", formData, {
                 headers: {
-                    Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzNzU2YTI0Yi1iZDRjLTQ4OTctOGExNi0wOTY3ZjY4ZDljZjQiLCJleHAiOjE3NTkxNTk2MDJ9.zMzWe9ppv9cqDLsylGc6CXmzy6olcH9u1WAM8IWKHe4`,
+                    Authorization: `Bearer ${accessToken}`,
                 },
                 // withCredentials: true,
                 onUploadProgress: (event) => {
@@ -75,7 +77,7 @@ const Upload = () => {
                     {
                         method: "GET",
                         headers: {
-                            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzNzU2YTI0Yi1iZDRjLTQ4OTctOGExNi0wOTY3ZjY4ZDljZjQiLCJleHAiOjE3NTkxNTk2MDJ9.zMzWe9ppv9cqDLsylGc6CXmzy6olcH9u1WAM8IWKHe4`, // 从 localStorage 或 context 获取
+                            Authorization: `Bearer ${accessToken}`
                         },
                     }
                 );
@@ -94,7 +96,7 @@ const Upload = () => {
         };
 
         fetchData().catch(console.error);
-    }, []);
+    }, [accessToken]);
 
     return (
         <>
@@ -163,7 +165,8 @@ const Upload = () => {
                     {/* Statement list */}
                     <ul role="list" className="divide-y divide-gray-100 overflow-y-auto">
                         {statements.map((stmt) => (
-                        <li className="flex justify-between py-3">
+                        <li key={stmt.id}
+                            className="flex justify-between py-3">
                             <div className="flex min-w-0 gap-x-2">
                                 <div className="h-10 flex flex-col justify-center">
                                     <img src="/src/assets/file.png" alt="" className="size-6 flex-none "/>
