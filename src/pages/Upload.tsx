@@ -102,6 +102,11 @@ const Upload = () => {
         <>
             <div className="container max-w-[720px] mx-auto">
 
+                {/* Description */}
+                <div className="py-10">
+                    <h2 className="text-2xl font-semibold">Upload Bank Statements</h2>
+                    <p className="text-sm font-medium text-[#717182] mt-2">Upload your bank statement CSV files to automatically analyze your spending patterns</p>
+                </div>
                 {/* Upload component */}
                 <div className="flex flex-col w-full border border-gray-200 rounded-xl p-10 bg-white shadow-sm">
                     {/* Title */}
@@ -115,7 +120,7 @@ const Upload = () => {
                     {/* Upload box */}
                     <label
                         htmlFor="uploadFile"
-                        className="bg-white text-slate-500 font-semibold text-base rounded-lg px-20 py-5
+                        className="bg-white text-sm font-semibold rounded-lg px-20 py-5
                        flex flex-col items-center justify-center cursor-pointer
                        border-2 border-gray-300 border-dashed"
                     >
@@ -127,7 +132,7 @@ const Upload = () => {
                         Drag and drop your CSV files here
 
                         <input type="file" id="uploadFile" className="hidden" onChange={handleFileChange} />
-                        <p className="text-sm font-medium text-slate-400 mt-2">
+                        <p className="text-sm font-medium text-[#717182] mt-2">
                             Or click to browse and select files from your computer.
                         </p>
                         <button
