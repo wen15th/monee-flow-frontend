@@ -14,7 +14,7 @@ function ProtectedLayout() {
     return (
         <div className="min-h-screen bg-gray-50">
             <Header />
-            <div className="pt-4">
+            <div>
                 <Outlet />
             </div>
         </div>
