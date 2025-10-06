@@ -13,8 +13,9 @@ interface Statement {
 }
 
 const Upload = () => {
-    // const [file, setFile] = useState<File | null>(null);
-    const [statements, setStatements] = React.useState<Statement[]>([]);
+    const [statements, setStatements] = useState<Statement[]>([]);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1)
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -73,7 +74,7 @@ const Upload = () => {
         const fetchData = async () => {
             try {
                 const res = await fetch(
-                    "http://localhost:8000/statements?page=1&page_size=10",
+                    `http://localhost:8000/statements?page=${page}&page_size=10`,
                     {
                         method: "GET",
                         headers: {
@@ -89,6 +90,7 @@ const Upload = () => {
 
                 const data = await res.json();
                 setStatements(data.items);
+                setTotalPages(Math.max(1, Math.ceil(data.total / data.page_size)));
             } catch (err) {
                 console.error(err);
                 setError("Failed to load upload history");
@@ -96,11 +98,11 @@ const Upload = () => {
         };
 
         fetchData().catch(console.error);
-    }, [accessToken]);
+    }, [accessToken, page]);
 
     return (
         <>
-            <div className="container max-w-[720px] mx-auto">
+            <div className="container max-w-[720px] pb-10 mx-auto">
 
                 {/* Description */}
                 <div className="py-10">
@@ -162,11 +164,12 @@ const Upload = () => {
                 </div>
 
                 {/* Upload History */}
-                <div className="flex flex-col w-full mt-6 border border-gray-200 rounded-xl p-10 bg-white shadow-sm max-h-[400px]">
+                <div className="flex flex-col w-full my-6 border border-gray-200 rounded-xl p-10 bg-white shadow-sm max-h-[450px]">
                     <div className="flex items-center mb-5">
                         <img src="/src/assets/history.png" alt="icon" className="w-5 h-5"/>
                         <p className="text-sm font-medium text-left text-gray-900 ml-2">Upload History</p>
                     </div>
+
                     {/* Statement list */}
                     <ul role="list" className="divide-y divide-gray-100 overflow-y-auto">
                         {statements.map((stmt) => (
@@ -193,6 +196,31 @@ const Upload = () => {
                         </li>
                         ))}
                     </ul>
+
+                    {/* Pagination */}
+                    <nav className="flex justify-center mt-8" aria-label="Pagination">
+                        <button onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                                disabled={page === 1}
+                                className="py-2 px-2 mx-1 inline-flex justify-center items-center gap-x-2 text-sm rounded-lg text-gray-800 hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:text-white dark:hover:bg-white/10 dark:focus:bg-white/10" aria-label="Previous">
+                            <svg className="shrink-0 size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="m15 18-6-6 6-6"></path>
+                            </svg>
+                            <span className="sr-only">Previous</span>
+                        </button>
+                        <div className="flex items-center">
+                            <span className="flex justify-center items-center border border-gray-200 text-gray-800 py-1 px-3 text-sm rounded-lg focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:border-neutral-700 dark:text-white dark:focus:bg-white/10">1</span>
+                            <span className="justify-center items-center text-gray-500 py-1 px-1.5 text-sm dark:text-neutral-500">of</span>
+                            <span className="flex justify-center items-center text-gray-500 py-1 px-1.5 text-sm dark:text-neutral-500">{totalPages}</span>
+                        </div>
+                        <button onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                            disabled={page === totalPages}
+                            className="py-2 px-2 mx-1 inline-flex justify-center items-center gap-x-2 text-sm rounded-lg text-gray-800 hover:bg-gray-100 focus:outline-hidden focus:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:text-white dark:hover:bg-white/10 dark:focus:bg-white/10" aria-label="Next">
+                            <span className="sr-only">Next</span>
+                            <svg className="shrink-0 size-3.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="m9 18 6-6-6-6"></path>
+                            </svg>
+                        </button>
+                    </nav>
                 </div>
             </div>
         </>
