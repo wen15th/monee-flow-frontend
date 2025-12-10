@@ -56,7 +56,8 @@ const Register = () => {
 
     return (
         <>
-            <div className="mx-auto max-w-md overflow-hidden rounded-xl bg-white shadow-md md:max-w-2xl">
+            <div className="min-h-[720px] flex items-center justify-center">
+                <div className="mx-auto max-w-md overflow-hidden rounded-xl bg-white shadow-md md:max-w-2xl">
                 <div className="md:flex">
                     <div className="md:shrink-0">
                         <div className="w-full object-cover md:h-full md:w-96 p-8">
@@ -157,7 +158,7 @@ const Register = () => {
                         </p>
                         <div className="mt-6 flex justify-center">
                             <button
-                                onClick={() => navigate("/")}
+                                onClick={() => navigate("/login")}
                                 className="flex justify-center bg-green-600 rounded-md px-3 py-1.5 border border-white text-sm/6 text-white font-semibold"
                             >
                                 Sign In
@@ -165,6 +166,7 @@ const Register = () => {
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
         </>
     );
