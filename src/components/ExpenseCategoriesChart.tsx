@@ -1,3 +1,13 @@
+type Category = {
+    category: string;
+    amount: number;
+    percentage: number;
+};
+
+type Props = {
+    categories: Category[];
+};
+
 import {
     PieChart,
     Pie,
@@ -6,17 +16,15 @@ import {
     Tooltip,
 } from "recharts";
 
-const data = [
-    { name: "Food", value: 400 },
-    { name: "Transport", value: 300 },
-    { name: "Entertainment", value: 200 },
-    { name: "Shopping", value: 150 },
-    { name: "Other", value: 100 },
-];
-
 const COLORS = ["#E57373", "#81C784", "#64B5F6", "#FFD54F", "#BA68C8"];
 
-const ExpenseCategoriesChart = () => {
+const ExpenseCategoriesChart = ({ categories }: Props) => {
+    const data = categories.map((item) => ({
+        name: item.category,
+        value: item.amount,
+        percentage: item.percentage,
+    }));
+
     return (
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm w-full">
             <p className="text-sm font-medium text-gray-500 mb-4">Expense Categories</p>
