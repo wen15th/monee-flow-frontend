@@ -24,14 +24,6 @@ const Upload = () => {
     const [success, setSuccess] = useState(false);
     const { accessToken } = useAuth();
 
-    // const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    //     if (!e.target.files || e.target.files.length === 0) return;
-
-    //     const selectedFile = e.target.files[0];
-    //     await handleUpload(selectedFile)
-    //     // Reset the input value so that selecting the same file again will still trigger onChange
-    //     e.target.value = "";
-    // }
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
     
@@ -82,7 +74,7 @@ const Upload = () => {
             console.error(err);
             setError("Network error");
         } finally {
-            // 给个小延迟，避免“loading”一闪而过
+            // Add a small delay to avoid the "loading" state flashing too quickly.
             setTimeout(() => {
                 setLoading(false);
                 setProgress(0);
@@ -158,13 +150,7 @@ const Upload = () => {
                         <p className="text-sm font-medium text-[#717182] mt-2">
                             Or click to browse and select files from your computer.
                         </p>
-                        {/* <button
-                            onClick={() => document.getElementById("uploadFile")?.click()}
-                            disabled={loading}
-                            className="mt-3 px-3 py-1 border border-gray-300 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                        >
-                            {loading ? "Uploading..." : "Browse Files"}
-                        </button> */}
+     
                         <div className="flex items-center gap-2 mt-3">
                             <button
                                 type="button"
