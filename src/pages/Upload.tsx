@@ -13,6 +13,8 @@ interface Statement {
 }
 
 const Upload = () => {
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedBank, setSelectedBank] = useState("");
     const [statements, setStatements] = useState<Statement[]>([]);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1)
@@ -22,23 +24,42 @@ const Upload = () => {
     const [success, setSuccess] = useState(false);
     const { accessToken } = useAuth();
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    //     if (!e.target.files || e.target.files.length === 0) return;
+
+    //     const selectedFile = e.target.files[0];
+    //     await handleUpload(selectedFile)
+    //     // Reset the input value so that selecting the same file again will still trigger onChange
+    //     e.target.value = "";
+    // }
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
-
-        const selectedFile = e.target.files[0];
-        await handleUpload(selectedFile)
-        // Reset the input value so that selecting the same file again will still trigger onChange
+    
+        setSelectedFile(e.target.files[0]);
+        setSuccess(false);
+        setError("");
+    
+        // reset input
         e.target.value = "";
-    }
+    };
 
-    const handleUpload = async (file: File) => {
+    const handleUpload = async () => {
+        if (!selectedFile) {
+            setError("Please select a file first");
+            return;
+        }
+        if (!selectedBank) {
+            setError("Please select a bank");
+            return;
+        }
+    
         setError("");
         setLoading(true);
-        setSuccess(false); // reset success before upload
-
+        setSuccess(false);
+    
         const formData = new FormData();
-        formData.append("file", file!)
-        formData.append("bank", "TD")
+        formData.append("file", selectedFile);
+        formData.append("bank", selectedBank);
 
         try {
             // Upload statement
@@ -137,13 +158,50 @@ const Upload = () => {
                         <p className="text-sm font-medium text-[#717182] mt-2">
                             Or click to browse and select files from your computer.
                         </p>
-                        <button
+                        {/* <button
                             onClick={() => document.getElementById("uploadFile")?.click()}
                             disabled={loading}
                             className="mt-3 px-3 py-1 border border-gray-300 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-50"
                         >
                             {loading ? "Uploading..." : "Browse Files"}
-                        </button>
+                        </button> */}
+                        <div className="flex items-center gap-2 mt-3">
+                            <button
+                                type="button"
+                                onClick={() => document.getElementById("uploadFile")?.click()}
+                                disabled={loading}
+                                className="h-8 px-3 py-1 border border-gray-300 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                            >
+                                Browse Files
+                            </button>
+
+                            <select
+                                value={selectedBank}
+                                onChange={(e) => setSelectedBank(e.target.value)}
+                                className="h-8 px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-700 focus:outline-none"
+                            >
+                                <option value="" disabled selected>
+                                    Select Bank
+                                </option>
+                                <option value="TD">TD</option>
+                                <option value="Rogers">Rogers</option>
+                                <option value="BMO">BMO</option>
+                            </select>
+
+                            <button
+                                type="button"
+                                onClick={handleUpload}
+                                disabled={loading || !selectedFile}
+                                className="h-8 px-4 py-1 rounded-md bg-blue-500 text-white text-xs font-bold hover:bg-blue-700"
+                            >
+                                Upload
+                            </button>
+                        </div>
+                        {selectedFile && (
+                                <p className="h-8 mt-2 text-xs text-gray-600">
+                                    Selected file: <span className="font-medium">{selectedFile.name}</span>
+                                </p>
+                            )}
 
                         {/* Loading */}
                         {loading && (

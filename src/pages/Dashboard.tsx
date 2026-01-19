@@ -25,12 +25,38 @@ type FilterParams = {
     max_amount_out?: string;
 };
 
+type Transaction = {
+    id: number;
+    user_id: string;
+    date: string;
+    description: string;
+    category_id: number;
+    category_name: string;
+    amount: string;
+    statement_id: number;
+    status: number;
+    created_at: string;
+    updated_at: string;
+};
+
+type TransactionsResponse = {
+    items: Transaction[];
+    total: number;
+    page: number;
+    page_size: number;
+};
+
 const Dashboard = ()=> {
 
     const [summary, setSummary] = useState<SummaryResponse | null>(null);
     const [loading, setLoading] = useState(true);
     // Filter params - initialize with current month
     const [filterParams, setFilterParams] = useState<FilterParams>(() => getCurrentMonthRange());
+    // Transactions state
+    const [transactions, setTransactions] = useState<TransactionsResponse | null>(null);
+    const [transactionsLoading, setTransactionsLoading] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     // Local filter form state
     const [localFilters, setLocalFilters] = useState<FilterParams>({
@@ -81,6 +107,52 @@ const Dashboard = ()=> {
         fetchSummary();
     }, [filterParams, accessToken]);
 
+    // Fetch transactions
+    useEffect(() => {
+        const fetchTransactions = async () => {
+            setTransactionsLoading(true);
+            try {
+                const params = new URLSearchParams();
+                // Add filter params
+                if (filterParams.start_date) {
+                    params.append("start_date", filterParams.start_date);
+                }
+                if (filterParams.end_date) {
+                    params.append("end_date", filterParams.end_date);
+                }
+                if (filterParams.min_amount_out) {
+                    params.append("min_amount_out", filterParams.min_amount_out);
+                }
+                if (filterParams.max_amount_out) {
+                    params.append("max_amount_out", filterParams.max_amount_out);
+                }
+                // Add pagination params
+                params.append("page", currentPage.toString());
+                params.append("page_size", pageSize.toString());
+                
+                const res = await fetch(
+                    `http://localhost:8000/transactions?${params.toString()}`,
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        },
+                    }
+                );
+                const data: TransactionsResponse = await res.json();
+                setTransactions(data);
+            } catch (e) {
+                console.error("Failed to load transactions", e);
+            } finally {
+                setTransactionsLoading(false);
+            }
+        };
+
+        if (accessToken) {
+            fetchTransactions();
+        }
+    }, [filterParams, currentPage, pageSize, accessToken]);
+
     // Sync local filters with filter params when opening the panel
     useEffect(() => {
         if (isFilterOpen) {
@@ -120,6 +192,7 @@ const Dashboard = ()=> {
     const handleApplyFilters = () => {
         setFilterParams(localFilters);
         setIsFilterOpen(false);
+        setCurrentPage(1); // Reset to first page when filters change
     };
 
     const handleClearFilters = () => {
@@ -181,6 +254,7 @@ const Dashboard = ()=> {
                         ...prev,
                         ...range,
                     }));
+                    setCurrentPage(1); // Reset to first page when changing filters
                 }}
             >
                 <Calendar className="h-4 w-4" />
@@ -324,7 +398,7 @@ const Dashboard = ()=> {
                 ) : (
                     <>
                         {/* Total Expenses */}
-                        <div className="flex my-10">
+                        <div className="flex my-6">
                             <div className="bg-white border border-gray-200 rounded-xl py-6 shadow-sm w-full max-w-xs">
                                 <p className="text-sm font-medium text-gray-500 mb-2">Total Expenses</p>
                                 <p className="text-2xl font-bold text-red-600 mb-1">
@@ -343,6 +417,108 @@ const Dashboard = ()=> {
                         />
                     </>
                 )}
+
+                {/* Transactions */}
+                <div className="mt-10">
+                    {/* <h2 className="text-2xl font-semibold mb-4">Transactions</h2> */}
+                    <div className="flex justify-between items-end mb-4">
+                        <h2 className="text-2xl font-semibold">Transactions</h2>
+                    </div>
+                    
+                    {/* Page size selector */}
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm text-gray-600">Show</label>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => {
+                                    setPageSize(Number(e.target.value));
+                                    setCurrentPage(1); // Reset to first page when changing page size
+                                }}
+                                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value={10}>10</option>
+                                <option value={20}>20</option>
+                                <option value={50}>50</option>
+                            </select>
+                            <span className="text-sm text-gray-600">per page</span>
+                        </div>
+                    </div>
+
+                    {/* Transactions Table */}
+                    {transactionsLoading ? (
+                        <div className="flex items-center justify-center py-10">
+                            <p className="text-gray-500">Loading transactions...</p>
+                        </div>
+                    ) : transactions && transactions.items.length > 0 ? (
+                        <>
+                            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                                <table className="w-full">
+                                    <thead className="bg-gray-50 border-b border-gray-200">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {transactions.items.map((transaction) => (
+                                            <tr key={transaction.id} className="hover:bg-gray-50">
+                                                <td className="px-4 py-3 text-left whitespace-nowrap text-sm text-gray-900">
+                                                    {new Date(transaction.date).toLocaleDateString("en-CA")}
+                                                </td>
+                                                <td className="px-4 py-3 text-left whitespace-nowrap text-sm text-gray-900">
+                                                    {transaction.category_name}
+                                                </td>
+                                                <td className="px-4 py-3 text-left text-sm text-gray-900">
+                                                    {transaction.description}
+                                                </td>
+                                                <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-red-600">
+                                                    {parseFloat(transaction.amount).toLocaleString("en-CA", {
+                                                        style: "currency",
+                                                        currency: summary?.currency || "CAD",
+                                                    })}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination */}
+                            {transactions.total > 0 && (
+                                <div className="flex items-center justify-between mt-4">
+                                    <div className="text-sm text-gray-600">
+                                        Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, transactions.total)} of {transactions.total} results
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                                            disabled={currentPage === 1}
+                                            className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Previous
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setCurrentPage((prev) => prev + 1)}
+                                            disabled={currentPage * pageSize >= transactions.total}
+                                            className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className="bg-white border border-gray-200 rounded-lg py-10">
+                            <p className="text-center text-gray-500">No transactions found</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </>
     );
