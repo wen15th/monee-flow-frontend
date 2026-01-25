@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { useCurrency } from "../context/CurrencyContext";
 import { Calendar, Filter, Check } from "lucide-react";
 import ExpenseCategoriesChart from "../components/ExpenseCategoriesChart";
 import { getCurrentMonthRange } from "../utils/date";
@@ -15,14 +16,29 @@ type SummaryResponse = {
         total: number;
         categories: Category[];
     };
-    currency: string;
+    display_currency: string;
 };
+
 
 type FilterParams = {
     start_date?: string;
     end_date?: string;
     min_amount_out?: string;
     max_amount_out?: string;
+};
+
+const DASHBOARD_FILTERS_STORAGE_KEY = "mf_dashboard_filters";
+
+const isValidFilterParams = (v: unknown): v is FilterParams => {
+    if (!v || typeof v !== "object") return false;
+    const obj = v as Record<string, unknown>;
+    const isStrOrUndef = (x: unknown) => x === undefined || typeof x === "string";
+    return (
+        isStrOrUndef(obj.start_date) &&
+        isStrOrUndef(obj.end_date) &&
+        isStrOrUndef(obj.min_amount_out) &&
+        isStrOrUndef(obj.max_amount_out)
+    );
 };
 
 type Transaction = {
@@ -32,7 +48,8 @@ type Transaction = {
     description: string;
     category_id: number;
     category_name: string;
-    amount: string;
+    amount: string; // original amount (minor units) in transaction currency
+    converted_amount: number; // converted amount (minor units) in display_currency
     statement_id: number;
     status: number;
     created_at: string;
@@ -47,11 +64,21 @@ type TransactionsResponse = {
 };
 
 const Dashboard = ()=> {
-
+    const { currency: displayCurrency } = useCurrency();
     const [summary, setSummary] = useState<SummaryResponse | null>(null);
     const [loading, setLoading] = useState(true);
-    // Filter params - initialize with current month
-    const [filterParams, setFilterParams] = useState<FilterParams>(() => getCurrentMonthRange());
+    // Filter params - initialize with current month or restore from localStorage
+    const [filterParams, setFilterParams] = useState<FilterParams>(() => {
+        try {
+            const raw = localStorage.getItem(DASHBOARD_FILTERS_STORAGE_KEY);
+            if (!raw) return getCurrentMonthRange();
+            const parsed = JSON.parse(raw);
+            if (isValidFilterParams(parsed)) return parsed;
+            return getCurrentMonthRange();
+        } catch {
+            return getCurrentMonthRange();
+        }
+    });
     // Transactions state
     const [transactions, setTransactions] = useState<TransactionsResponse | null>(null);
     const [transactionsLoading, setTransactionsLoading] = useState(false);
@@ -75,17 +102,24 @@ const Dashboard = ()=> {
         month: "long",
     });
 
+    const minorToMajor = (minor: number) => minor / 100;
+
+    const formatMoneyFromMinor = (minor: number) =>
+        minorToMajor(minor).toLocaleString("en-CA", {
+            style: "currency",
+            currency: displayCurrency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+
     useEffect(() => {
         const fetchSummary = async () => {
             try {
-                // Only include non-empty filter params
+                // Only include non-empty date filter params (amount filters disabled for now)
                 const params = new URLSearchParams();
-                Object.entries(filterParams).forEach(([key, value]) => {
-                    if (value) {
-                        params.append(key, value);
-                    }
-                });
-                
+                if (filterParams.start_date) params.append("start_date", filterParams.start_date);
+                if (filterParams.end_date) params.append("end_date", filterParams.end_date);
+                params.append("display_currency", displayCurrency);
                 const res = await fetch(
                     `http://localhost:8000/summary?${params.toString()}`,
                     {
@@ -104,8 +138,10 @@ const Dashboard = ()=> {
             }
         };
 
-        fetchSummary();
-    }, [filterParams, accessToken]);
+        if (accessToken) {
+            fetchSummary();
+        }
+    }, [filterParams, accessToken, displayCurrency]);
 
     // Fetch transactions
     useEffect(() => {
@@ -120,16 +156,17 @@ const Dashboard = ()=> {
                 if (filterParams.end_date) {
                     params.append("end_date", filterParams.end_date);
                 }
-                if (filterParams.min_amount_out) {
-                    params.append("min_amount_out", filterParams.min_amount_out);
-                }
-                if (filterParams.max_amount_out) {
-                    params.append("max_amount_out", filterParams.max_amount_out);
-                }
+                // Amount range filters disabled for now
+                // if (filterParams.min_amount_out) {
+                //     params.append("min_amount_out", filterParams.min_amount_out);
+                // }
+                // if (filterParams.max_amount_out) {
+                //     params.append("max_amount_out", filterParams.max_amount_out);
+                // }
                 // Add pagination params
                 params.append("page", currentPage.toString());
                 params.append("page_size", pageSize.toString());
-                
+                params.append("display_currency", displayCurrency);
                 const res = await fetch(
                     `http://localhost:8000/transactions?${params.toString()}`,
                     {
@@ -151,7 +188,7 @@ const Dashboard = ()=> {
         if (accessToken) {
             fetchTransactions();
         }
-    }, [filterParams, currentPage, pageSize, accessToken]);
+    }, [filterParams, currentPage, pageSize, accessToken, displayCurrency]);
 
     // Sync local filters with filter params when opening the panel
     useEffect(() => {
@@ -189,8 +226,24 @@ const Dashboard = ()=> {
         };
     }, [isFilterOpen]);
 
+    // Persist applied filters so refresh keeps the current selection
+    useEffect(() => {
+        try {
+            localStorage.setItem(
+                DASHBOARD_FILTERS_STORAGE_KEY,
+                JSON.stringify(filterParams)
+            );
+        } catch {
+            // ignore
+        }
+    }, [filterParams]);
+
     const handleApplyFilters = () => {
-        setFilterParams(localFilters);
+        setFilterParams({
+            start_date: localFilters.start_date,
+            end_date: localFilters.end_date,
+            // min_amount_out and max_amount_out disabled for now
+        });
         setIsFilterOpen(false);
         setCurrentPage(1); // Reset to first page when filters change
     };
@@ -319,18 +372,24 @@ const Dashboard = ()=> {
                                 </div>
                             </div>
 
-                            {/* Amount Range */}
+                            {/* Amount Range (disabled for now)
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Amount Range (CAD)</label>
+                                <label className="text-sm font-medium text-gray-700">
+                                    Amount Range ({displayCurrency})
+                                </label>
                                 <div className="space-y-2">
                                     <div>
                                         <label className="block text-xs text-gray-500 mb-1">Min Amount</label>
                                         <div className="relative">
-                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">CAD</span>
+                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">
+                                                {displayCurrency}
+                                            </span>
                                             <input
                                                 type="text"
                                                 value={localFilters.min_amount_out || ""}
-                                                onChange={(e) => handleAmountInputChange("min_amount_out", e.target.value)}
+                                                onChange={(e) =>
+                                                    handleAmountInputChange("min_amount_out", e.target.value)
+                                                }
                                                 placeholder="0"
                                                 className="w-full rounded-lg border border-gray-300 pl-14 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
@@ -339,11 +398,15 @@ const Dashboard = ()=> {
                                     <div>
                                         <label className="block text-xs text-gray-500 mb-1">Max Amount</label>
                                         <div className="relative">
-                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">CAD</span>
+                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">
+                                                {displayCurrency}
+                                            </span>
                                             <input
                                                 type="text"
                                                 value={localFilters.max_amount_out || ""}
-                                                onChange={(e) => handleAmountInputChange("max_amount_out", e.target.value)}
+                                                onChange={(e) =>
+                                                    handleAmountInputChange("max_amount_out", e.target.value)
+                                                }
                                                 placeholder="0"
                                                 className="w-full rounded-lg border border-gray-300 pl-14 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
@@ -351,6 +414,7 @@ const Dashboard = ()=> {
                                     </div>
                                 </div>
                             </div>
+                            */}
 
                             {/* Action Buttons */}
                             <div className="flex gap-2 pt-2">
@@ -378,7 +442,7 @@ const Dashboard = ()=> {
 
     return (
         <>
-            <div className="container max-w-3xl pb-10 mx-auto">
+            <div className="container max-w-5xl pb-10 mx-auto">
                 {/* Title & Filtering */}
                 <div className="flex my-10 justify-between">
                     {/* Overview */}
@@ -397,24 +461,27 @@ const Dashboard = ()=> {
                     </div>
                 ) : (
                     <>
-                        {/* Total Expenses */}
-                        <div className="flex my-6">
-                            <div className="bg-white border border-gray-200 rounded-xl py-6 shadow-sm w-full max-w-xs">
+                        {/* Total Expenses + Expense Categories */}
+                        <div className="my-6 grid grid-cols-1 gap-4 md:grid-cols-[260px_1fr]">
+                            {/* Total Expenses */}
+                            <div className="bg-white border border-gray-200 rounded-xl py-6 shadow-sm w-full md:w-[260px] md:shrink-0">
                                 <p className="text-sm font-medium text-gray-500 mb-2">Total Expenses</p>
                                 <p className="text-2xl font-bold text-red-600 mb-1">
-                                    {summary.expenses.total.toLocaleString("en-CA", {
-                                        style: "currency",
-                                        currency: summary.currency,
-                                    })}
+                                    {formatMoneyFromMinor(summary.expenses.total)}
                                 </p>
-                                <p className="text-sm text-gray-400">↓ x.x% from last month</p>
+                                {/* <p className="text-sm text-gray-400">↓ x.x% from last month</p> */}
+                            </div>
+
+                            {/* Expense Categories Pie Chart */}
+                            <div className="min-w-0">
+                                <ExpenseCategoriesChart 
+                                    categories={summary.expenses.categories}
+                                    currency={displayCurrency}
+                                />
                             </div>
                         </div>
 
-                        {/* Expense Categories Pie Chart */}
-                        <ExpenseCategoriesChart
-                            categories={summary.expenses.categories}
-                        />
+                        
                     </>
                 )}
 
@@ -475,10 +542,11 @@ const Dashboard = ()=> {
                                                     {transaction.description}
                                                 </td>
                                                 <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-red-600">
-                                                    {parseFloat(transaction.amount).toLocaleString("en-CA", {
+                                                    {formatMoneyFromMinor(transaction.converted_amount)}
+                                                    {/* {parseFloat(transaction.amount).toLocaleString("en-CA", {
                                                         style: "currency",
                                                         currency: summary?.currency || "CAD",
-                                                    })}
+                                                    })} */}
                                                 </td>
                                             </tr>
                                         ))}
