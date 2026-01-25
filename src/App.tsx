@@ -1,6 +1,7 @@
 import { Login } from "./pages/Login"
 import {Logout} from "./pages/Logout";
 import { AuthProvider } from './context/AuthProvider.tsx';
+import { CurrencyProvider } from "./context/CurrencyContext";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { ProtectedRoute } from './components/ProtectedRoute';
 import './App.css'
@@ -24,24 +25,26 @@ function ProtectedLayout() {
 function App() {
     return (
         <AuthProvider>
-            <BrowserRouter>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/logout" element={<Logout />} />
-                    <Route path="/signup" element={<Register />} />
+            <CurrencyProvider>
+                <BrowserRouter>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/logout" element={<Logout />} />
+                        <Route path="/signup" element={<Register />} />
 
-                    <Route
-                        element={
-                            <ProtectedRoute>
-                                <ProtectedLayout /> {/* Header + Outlet */}
-                            </ProtectedRoute>
-                        }
-                    >
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/upload" element={<Upload />} />
-                    </Route>
-                </Routes>
-            </BrowserRouter>
+                        <Route
+                            element={
+                                <ProtectedRoute>
+                                    <ProtectedLayout /> {/* Header + Outlet */}
+                                </ProtectedRoute>
+                            }
+                        >
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/upload" element={<Upload />} />
+                        </Route>
+                    </Routes>
+                </BrowserRouter>
+            </CurrencyProvider>
         </AuthProvider>
     )
 }

@@ -3,6 +3,8 @@ import {useState, useEffect} from "react";
 import * as React from "react";
 import { useAuth } from '../hooks/useAuth';
 
+type Currency = "USD" | "CAD" | "CNY";
+
 
 interface Statement {
     id: number,
@@ -15,6 +17,7 @@ interface Statement {
 const Upload = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [selectedBank, setSelectedBank] = useState("");
+    const [selectedCurrency, setSelectedCurrency] = useState<Currency | "">("");
     const [statements, setStatements] = useState<Statement[]>([]);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1)
@@ -24,12 +27,15 @@ const Upload = () => {
     const [success, setSuccess] = useState(false);
     const { accessToken } = useAuth();
 
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
     
         setSelectedFile(e.target.files[0]);
         setSuccess(false);
         setError("");
+        setSelectedBank("");
+        setSelectedCurrency("");
     
         // reset input
         e.target.value = "";
@@ -44,14 +50,19 @@ const Upload = () => {
             setError("Please select a bank");
             return;
         }
-    
+        if (!selectedCurrency) {
+            setError("Please select a currency");
+            return;
+        }
+
         setError("");
         setLoading(true);
         setSuccess(false);
-    
+
         const formData = new FormData();
         formData.append("file", selectedFile);
         formData.append("bank", selectedBank);
+        formData.append("currency", selectedCurrency);
 
         try {
             // Upload statement
@@ -70,6 +81,9 @@ const Upload = () => {
 
             console.log("Upload success:", res.data);
             setSuccess(true);
+            setSelectedFile(null);
+            setSelectedBank("");
+            setSelectedCurrency("");
         } catch (err) {
             console.error(err);
             setError("Network error");
@@ -166,7 +180,7 @@ const Upload = () => {
                                 onChange={(e) => setSelectedBank(e.target.value)}
                                 className="h-8 px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-700 focus:outline-none"
                             >
-                                <option value="" disabled selected>
+                                <option value="" disabled>
                                     Select Bank
                                 </option>
                                 <option value="TD">TD</option>
@@ -174,11 +188,29 @@ const Upload = () => {
                                 <option value="BMO">BMO</option>
                             </select>
 
+                            <select
+                                value={selectedCurrency}
+                                onChange={(e) => setSelectedCurrency(e.target.value as Currency)}
+                                className="h-8 px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-700 focus:outline-none"
+                            >
+                                <option value="" disabled>
+                                    Currency
+                                </option>
+                                <option value="USD">🇺🇸 USD</option>
+                                <option value="CAD">🇨🇦 CAD</option>
+                                <option value="CNY">🇨🇳 CNY</option>
+                            </select>
+
                             <button
                                 type="button"
                                 onClick={handleUpload}
-                                disabled={loading || !selectedFile}
-                                className="h-8 px-4 py-1 rounded-md bg-blue-500 text-white text-xs font-bold hover:bg-blue-700"
+                                disabled={loading || !selectedFile || !selectedBank || !selectedCurrency}
+                                className={`h-8 px-4 py-1 rounded-md text-xs font-bold transition
+    ${
+        loading || !selectedFile || !selectedBank || !selectedCurrency
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            : "bg-green-600 text-white hover:bg-green-700"
+    }`}
                             >
                                 Upload
                             </button>
