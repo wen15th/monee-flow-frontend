@@ -9,6 +9,7 @@ type Props = {
     currency: "USD" | "CAD" | "CNY";
 };
 
+import { Bold } from "lucide-react";
 import {
     PieChart,
     Pie,
@@ -38,15 +39,15 @@ const ExpenseCategoriesChart = ({ categories, currency }: Props) => {
     return (
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm w-full">
             <p className="text-sm font-medium text-gray-500 mb-4">Expense Categories</p>
-            <div className="h-64 flex justify-center">
-                <ResponsiveContainer width="80%" height="100%">
+            <div className="h-80 flex justify-center">
+                <ResponsiveContainer width="95%" height="100%">
                     <PieChart>
                         <Pie
                             data={data}
                             cx="50%"
                             cy="50%"
                             labelLine={{ stroke: "#999", strokeWidth: 1 }}
-                            outerRadius={70}
+                            outerRadius={85}
                             fill="#8884d8"
                             dataKey="value"
                             label={({ cx, cy, midAngle, outerRadius, name, percent, index }) => {
@@ -54,7 +55,7 @@ const ExpenseCategoriesChart = ({ categories, currency }: Props) => {
 
                                 // Place label slightly outside the slice to avoid being too close to the pie
                                 const RADIAN = Math.PI / 180;
-                                const radius = (outerRadius as number) + 34;
+                                const radius = (outerRadius as number) + 24;
                                 const x = (cx as number) + radius * Math.cos(-((midAngle as number) || 0) * RADIAN);
                                 const y = (cy as number) + radius * Math.sin(-((midAngle as number) || 0) * RADIAN);
 
@@ -68,10 +69,10 @@ const ExpenseCategoriesChart = ({ categories, currency }: Props) => {
                                         textAnchor={anchor}
                                         dominantBaseline="central"
                                         fill={fill}
-                                        fontSize={14}
+                                        fontSize={13}
+                                        fontWeight={600}
                                     >
-                                        <tspan x={x} dy="-0.6em">{name}</tspan>
-                                        <tspan x={x} dy="1.2em">{pct}</tspan>
+                                        {`${name} ${pct}`}
                                     </text>
                                 );
                             }}
@@ -84,7 +85,7 @@ const ExpenseCategoriesChart = ({ categories, currency }: Props) => {
                             layout="vertical"
                             align="right"
                             verticalAlign="middle"
-                            wrapperStyle={{ fontSize: 13}}
+                            wrapperStyle={{ fontSize: 13, fontWeight: 600, paddingLeft: 24 }}
                             formatter={(value, entry: any) => {
                                 const payload = entry?.payload;
                                 if (!payload) return value;
