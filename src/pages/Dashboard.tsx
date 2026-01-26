@@ -44,7 +44,7 @@ const isValidFilterParams = (v: unknown): v is FilterParams => {
 type Transaction = {
     id: number;
     user_id: string;
-    date: string;
+    tx_date: string;
     description: string;
     category_id: number;
     category_name: string;
@@ -533,7 +533,7 @@ const Dashboard = ()=> {
                                         {transactions.items.map((transaction) => (
                                             <tr key={transaction.id} className="hover:bg-gray-50">
                                                 <td className="px-4 py-3 text-left whitespace-nowrap text-sm text-gray-900">
-                                                    {new Date(transaction.date).toLocaleDateString("en-CA")}
+                                                    {new Date(transaction.tx_date).toLocaleDateString("en-CA")}
                                                 </td>
                                                 <td className="px-4 py-3 text-left whitespace-nowrap text-sm text-gray-900">
                                                     {transaction.category_name}

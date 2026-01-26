@@ -14,6 +14,14 @@ interface Statement {
     status: number; // e.g. "Completed"
 }
 
+interface StatementDeleteResponse {
+    statement_id: number;
+    deleted: boolean;
+    transactions_affected: number;
+    file_deleted: boolean;
+    file_delete_error: string | null;
+}
+
 const Upload = () => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [selectedBank, setSelectedBank] = useState("");
@@ -25,6 +33,13 @@ const Upload = () => {
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [success, setSuccess] = useState(false);
+    const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const showToast = (type: "success" | "error", message: string) => {
+        setToast({ type, message });
+        window.setTimeout(() => setToast(null), 3000);
+    };
     const { accessToken } = useAuth();
 
 
@@ -42,6 +57,7 @@ const Upload = () => {
     };
 
     const handleUpload = async () => {
+        let uploadSucceeded = false;
         if (!selectedFile) {
             setError("Please select a file first");
             return;
@@ -80,10 +96,12 @@ const Upload = () => {
             });
 
             console.log("Upload success:", res.data);
+            uploadSucceeded = true;
             setSuccess(true);
             setSelectedFile(null);
             setSelectedBank("");
             setSelectedCurrency("");
+            // Do NOT refresh history here
         } catch (err) {
             console.error(err);
             setError("Network error");
@@ -92,44 +110,114 @@ const Upload = () => {
             setTimeout(() => {
                 setLoading(false);
                 setProgress(0);
+
+                // Refresh history only after the success message becomes visible (success && !loading)
+                if (uploadSucceeded) {
+                    window.setTimeout(() => {
+                        // Ensure newest upload is visible
+                        if (page !== 1) {
+                            setPage(1); // useEffect will refetch
+                        } else {
+                            fetchStatements().catch(console.error);
+                        }
+                    }, 200);
+                }
             }, 1000);
         }
     }
 
+    const fetchStatements = async () => {
+        try {
+            const res = await fetch(
+                `http://localhost:8000/statements?page=${page}&page_size=10`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                }
+            );
+
+            if (!res.ok) {
+                const err = await res.json();
+                setError(err.detail || "Failed to fetch statements");
+                return;
+            }
+
+            const data = await res.json();
+            setStatements(data.items);
+            setTotalPages(Math.max(1, Math.ceil(data.total / data.page_size)));
+        } catch (err) {
+            console.error(err);
+            setError("Failed to load upload history");
+        }
+    };
+
+    const handleDeleteStatement = async (statementId: number) => {
+        const confirmed = window.confirm(
+            "Deleting this file will also delete its related transaction entries. Are you sure you want to delete it?"
+        );
+        if (!confirmed) return;
+
+        setError("");
+        setDeleting(true);
+        setSuccess(false);
+
+        try {
+            const res = await axios.delete<StatementDeleteResponse>(
+                `http://localhost:8000/statements/${statementId}?delete_transactions=true`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                }
+            );
+
+            const data = res.data;
+            if (data.deleted) {
+                showToast(
+                    "success",
+                    `Deleted successfully! The related ${data.transactions_affected} transactions have been deleted.`
+                );
+            } else {
+                showToast("error", "Delete failed. Please try again.");
+                return;
+            }
+
+            // Refresh list
+            await fetchStatements();
+        } catch (err) {
+            console.error(err);
+            showToast("error", "Failed to delete the statement.");
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     // Fetch user statements history
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const res = await fetch(
-                    `http://localhost:8000/statements?page=${page}&page_size=10`,
-                    {
-                        method: "GET",
-                        headers: {
-                            Authorization: `Bearer ${accessToken}`
-                        },
-                    }
-                );
-
-                if (!res.ok) {
-                    const err = await res.json();
-                    setError(err.detail || "Failed to fetch statements")
-                }
-
-                const data = await res.json();
-                setStatements(data.items);
-                setTotalPages(Math.max(1, Math.ceil(data.total / data.page_size)));
-            } catch (err) {
-                console.error(err);
-                setError("Failed to load upload history");
-            }
-        };
-
-        fetchData().catch(console.error);
+        fetchStatements().catch(console.error);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [accessToken, page]);
 
     return (
         <>
             <div className="container max-w-[720px] pb-10 mx-auto">
+                {toast && (
+                    <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 pointer-events-none">
+                        <div
+                            className={`rounded-lg px-6 py-4 shadow-xl border text-sm font-semibold pointer-events-auto ${
+                                toast.type === "success"
+                                    ? "bg-white border-green-500 text-green-700"
+                                    : "bg-white border-red-200 text-red-700"
+                            }`}
+                            role="status"
+                            aria-live="polite"
+                        >
+                            {toast.type === "success" ? "✅ " : "❌ "}{toast.message}
+                        </div>
+                    </div>
+                )}
 
                 {/* Description */}
                 <div className="py-10">
@@ -185,7 +273,8 @@ const Upload = () => {
                                 </option>
                                 <option value="TD">TD</option>
                                 <option value="Rogers">Rogers</option>
-                                <option value="BMO">BMO</option>
+                                {/* <option value="BMO">BMO</option> */}
+                                <option value="CMB">CMB</option>
                             </select>
 
                             <select
@@ -250,24 +339,35 @@ const Upload = () => {
                     <ul role="list" className="divide-y divide-gray-100 overflow-y-auto">
                         {statements.map((stmt) => (
                         <li key={stmt.id}
-                            className="flex justify-between py-3">
-                            <div className="flex min-w-0 gap-x-2">
+                            className="flex items-center py-3">
+                            <div className="flex min-w-0 gap-x-2 flex-1">
                                 <div className="h-10 flex flex-col justify-center">
                                     <img src="/src/assets/file.png" alt="" className="size-6 flex-none "/>
                                 </div>
                                 <div className="min-w-0 flex-auto">
-                                    <p className="text-sm/6 text-left font-semibold text-gray-900">{stmt.s3_key}</p>
+                                    <div className="flex items-center gap-x-1">
+                                        <p className="text-sm/6 text-left font-semibold text-gray-900">{stmt.s3_key}</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteStatement(stmt.id)}
+                                            disabled={deleting}
+                                            title="Delete"
+                                            className="inline-flex items-center justify-center rounded-full p-0.5 text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                                                <circle cx="12" cy="12" r="9" />
+                                                <line x1="9" y1="9" x2="15" y2="15" />
+                                                <line x1="15" y1="9" x2="9" y2="15" />
+                                            </svg>
+                                        </button>
+                                        <img src="/src/assets/tick-mark.png" alt="" className="size-5" />
+                                        <p className="text-sm text-gray-600">{stmt.status == 1 ? "Completed" : "Processing"}</p>
+                                    </div>
                                     <div className="flex flex-row gap-x-3">
                                         <p className="text-xs/4 text-left text-gray-500">{stmt.created_at}</p>
                                         <p className="text-xs/4 text-left text-gray-500">{stmt.transactions} transactions</p>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="hidden shrink-0 md:flex-row sm:flex sm:flex-col sm:items-end">
-                                <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/tick-mark.png" alt="" className="size-5 "/>
-                                </div>
-                                <p className="text-sm/10 text-gray-600 ml-1">{stmt.status == 1 ?"Completed" : "Processing" }</p>
                             </div>
                         </li>
                         ))}
@@ -284,7 +384,7 @@ const Upload = () => {
                             <span className="sr-only">Previous</span>
                         </button>
                         <div className="flex items-center">
-                            <span className="flex justify-center items-center border border-gray-200 text-gray-800 py-1 px-3 text-sm rounded-lg focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:border-neutral-700 dark:text-white dark:focus:bg-white/10">1</span>
+                            <span className="flex justify-center items-center border border-gray-200 text-gray-800 py-1 px-3 text-sm rounded-lg focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:border-neutral-700 dark:text-white dark:focus:bg-white/10">{page}</span>
                             <span className="justify-center items-center text-gray-500 py-1 px-1.5 text-sm dark:text-neutral-500">of</span>
                             <span className="flex justify-center items-center text-gray-500 py-1 px-1.5 text-sm dark:text-neutral-500">{totalPages}</span>
                         </div>
