@@ -256,15 +256,6 @@ const Dashboard = ()=> {
         // filterParams will be updated when Apply is clicked
     };
 
-    const handleAmountInputChange = (field: "min_amount_out" | "max_amount_out", value: string) => {
-        // Only allow integers (remove non-digit characters)
-        const intValue = value.replace(/\D/g, "");
-        setLocalFilters((prev) => ({
-            ...prev,
-            [field]: intValue,
-        }));
-    };
-
     if (loading) {
         return <div className="p-10">Loading dashboard...</div>;
     }

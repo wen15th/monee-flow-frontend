@@ -9,7 +9,6 @@ type Props = {
     currency: "USD" | "CAD" | "CNY";
 };
 
-import { Bold } from "lucide-react";
 import {
     PieChart,
     Pie,
