@@ -121,7 +121,7 @@ const Dashboard = ()=> {
                 if (filterParams.end_date) params.append("end_date", filterParams.end_date);
                 params.append("display_currency", displayCurrency);
                 const res = await fetch(
-                    `http://localhost:8000/summary?${params.toString()}`,
+                    `${import.meta.env.VITE_API_BASE_URL}/summary?${params.toString()}`,
                     {
                         method: "GET",
                         headers: {
@@ -168,7 +168,7 @@ const Dashboard = ()=> {
                 params.append("page_size", pageSize.toString());
                 params.append("display_currency", displayCurrency);
                 const res = await fetch(
-                    `http://localhost:8000/transactions?${params.toString()}`,
+                    `${import.meta.env.VITE_API_BASE_URL}/transactions?${params.toString()}`,
                     {
                         method: "GET",
                         headers: {
