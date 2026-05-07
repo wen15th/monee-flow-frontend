@@ -26,7 +26,7 @@ export const Login = () => {
         formData.append("password", password);
 
         try {
-            const res = await fetch("http://localhost:8000/users/login", {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/login`, {
                 method: "POST",
                 body: formData,
                 credentials: "include"

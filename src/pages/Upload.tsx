@@ -82,7 +82,7 @@ const Upload = () => {
 
         try {
             // Upload statement
-            const res = await axios.post("http://localhost:8000/statements", formData, {
+            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/statements`, formData, {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
                 },
@@ -129,7 +129,7 @@ const Upload = () => {
     const fetchStatements = async () => {
         try {
             const res = await fetch(
-                `http://localhost:8000/statements?page=${page}&page_size=10`,
+                `${import.meta.env.VITE_API_BASE_URL}/statements?page=${page}&page_size=10`,
                 {
                     method: "GET",
                     headers: {
@@ -165,7 +165,7 @@ const Upload = () => {
 
         try {
             const res = await axios.delete<StatementDeleteResponse>(
-                `http://localhost:8000/statements/${statementId}?delete_transactions=true`,
+                `${import.meta.env.VITE_API_BASE_URL}/statements/${statementId}?delete_transactions=true`,
                 {
                     headers: {
                         Authorization: `Bearer ${accessToken}`,

@@ -2,7 +2,7 @@ import { Login } from "./pages/Login"
 import {Logout} from "./pages/Logout";
 import { AuthProvider } from './context/AuthProvider.tsx';
 import { CurrencyProvider } from "./context/CurrencyContext";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet, Navigate } from "react-router-dom";
 import { ProtectedRoute } from './components/ProtectedRoute';
 import './App.css'
 import Dashboard from "./pages/Dashboard.tsx";
@@ -28,6 +28,7 @@ function App() {
             <CurrencyProvider>
                 <BrowserRouter>
                     <Routes>
+                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/logout" element={<Logout />} />
                         <Route path="/signup" element={<Register />} />
