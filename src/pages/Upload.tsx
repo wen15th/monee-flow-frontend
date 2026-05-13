@@ -2,6 +2,10 @@ import axios from "axios";
 import {useState, useEffect} from "react";
 import * as React from "react";
 import { useAuth } from '../hooks/useAuth';
+import fileIcon from '../assets/file.png';
+import historyIcon from '../assets/history.png';
+import uploadIcon from '../assets/upload.png';
+import tickMarkIcon from '../assets/tick-mark.png';
 
 type Currency = "USD" | "CAD" | "CNY";
 
@@ -114,7 +118,7 @@ const Upload = () => {
                 // Refresh history only after the success message becomes visible (success && !loading)
                 if (uploadSucceeded) {
                     window.setTimeout(() => {
-                        // Ensure newest upload is visible
+                        // Ensure the newest upload is visible
                         if (page !== 1) {
                             setPage(1); // useEffect will refetch
                         } else {
@@ -228,7 +232,7 @@ const Upload = () => {
                 <div className="flex flex-col w-full border border-gray-200 rounded-xl p-10 bg-white shadow-sm">
                     {/* Title */}
                     <div className="flex items-center mb-5">
-                        <img src="/src/assets/upload.png" alt="icon" className="w-5 h-5" />
+                        <img src={uploadIcon} alt="icon" className="w-5 h-5" />
                         <p className="text-sm font-medium text-gray-900 ml-2">
                             Upload New Bank Statement
                         </p>
@@ -331,7 +335,7 @@ const Upload = () => {
                 {/* Upload History */}
                 <div className="flex flex-col w-full my-6 border border-gray-200 rounded-xl p-10 bg-white shadow-sm max-h-[450px]">
                     <div className="flex items-center mb-5">
-                        <img src="/src/assets/history.png" alt="icon" className="w-5 h-5"/>
+                        <img src={historyIcon} alt="icon" className="w-5 h-5"/>
                         <p className="text-sm font-medium text-left text-gray-900 ml-2">Upload History</p>
                     </div>
 
@@ -342,7 +346,7 @@ const Upload = () => {
                             className="flex items-center py-3">
                             <div className="flex min-w-0 gap-x-2 flex-1">
                                 <div className="h-10 flex flex-col justify-center">
-                                    <img src="/src/assets/file.png" alt="" className="size-6 flex-none "/>
+                                    <img src={fileIcon} alt="" className="size-6 flex-none "/>
                                 </div>
                                 <div className="min-w-0 flex-auto">
                                     <div className="flex items-center gap-x-1">
@@ -360,7 +364,7 @@ const Upload = () => {
                                                 <line x1="15" y1="9" x2="9" y2="15" />
                                             </svg>
                                         </button>
-                                        <img src="/src/assets/tick-mark.png" alt="" className="size-5" />
+                                        <img src={tickMarkIcon} alt="" className="size-5" />
                                         <p className="text-sm text-gray-600">{stmt.status == 1 ? "Completed" : "Processing"}</p>
                                     </div>
                                     <div className="flex flex-row gap-x-3">
