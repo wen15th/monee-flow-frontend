@@ -252,8 +252,6 @@ const Dashboard = ()=> {
         // Clear filters in panel only (don't apply yet)
         const currentMonthRange = getCurrentMonthRange();
         setLocalFilters(currentMonthRange);
-        // Keep panel open - only close on Apply
-        // filterParams will be updated when Apply is clicked
     };
 
     if (loading) {
@@ -287,8 +285,8 @@ const Dashboard = ()=> {
                 type="button"
                 className={`inline-flex items-center gap-2 rounded-lg border text-sm font-medium transition-colors ${
                     isThisMonthActive
-                        ? "border-green-500 bg-green-50 text-green-700 hover:bg-green-100 font-semibold"
-                        : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                        ? "bg-accent text-white"
+                        : "border-gray-200 bg-white text-gray-700"
                 }`}
                 aria-label="Select month"
                 onClick={() => {
@@ -298,7 +296,7 @@ const Dashboard = ()=> {
                         ...prev,
                         ...range,
                     }));
-                    setCurrentPage(1); // Reset to first page when changing filters
+                    setCurrentPage(1);
                 }}
             >
                 <Calendar className="h-4 w-4" />
@@ -311,8 +309,8 @@ const Dashboard = ()=> {
                     type="button"
                     className={`inline-flex items-center gap-2 rounded-lg border text-sm font-medium transition-colors ${
                         isFilterActive
-                            ? "border-green-500 bg-green-50 text-green-700 hover:bg-green-100 font-semibold"
-                            : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                            ? "border-accent bg-accent text-white "
+                            : "border-gray-200 bg-white text-gray-700"
                     }`}
                     aria-label="Open filters"
                     onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -438,7 +436,7 @@ const Dashboard = ()=> {
                 <div className="flex my-10 justify-between">
                     {/* Overview */}
                     <div className="flex flex-col items-start">
-                        <h2 className="text-2xl font-semibold">Overview</h2>
+                        <h2 className="font-display text-2xl font-semibold">Overview</h2>
                         <p className="text-sm font-medium text-[#717182]">{formattedDate}</p>
                     </div>
                     {/* Filtering */}
@@ -454,13 +452,11 @@ const Dashboard = ()=> {
                     <>
                         {/* Total Expenses + Expense Categories */}
                         <div className="my-6 grid grid-cols-1 gap-4 md:grid-cols-[260px_1fr]">
-                            {/* Total Expenses */}
-                            <div className="bg-white border border-gray-200 rounded-xl py-6 shadow-sm w-full md:w-[260px] md:shrink-0">
-                                <p className="text-sm font-medium text-gray-500 mb-2">Total Expenses</p>
-                                <p className="text-2xl font-bold text-red-600 mb-1">
+                            <div className="mf-card p-7">
+                                <p className="mf-card-title mb-3">You've Spent</p>
+                                <p className="font-display text-[44px] font-bold tracking-tight text-ink leading-tight">
                                     {formatMoneyFromMinor(summary.expenses.total)}
                                 </p>
-                                {/* <p className="text-sm text-gray-400">↓ x.x% from last month</p> */}
                             </div>
 
                             {/* Expense Categories Pie Chart */}
@@ -532,12 +528,8 @@ const Dashboard = ()=> {
                                                 <td className="px-4 py-3 text-left text-sm text-gray-900">
                                                     {transaction.description}
                                                 </td>
-                                                <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-red-600">
+                                                <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-bold">
                                                     {formatMoneyFromMinor(transaction.converted_amount)}
-                                                    {/* {parseFloat(transaction.amount).toLocaleString("en-CA", {
-                                                        style: "currency",
-                                                        currency: summary?.currency || "CAD",
-                                                    })} */}
                                                 </td>
                                             </tr>
                                         ))}

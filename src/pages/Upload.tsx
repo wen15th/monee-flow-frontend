@@ -254,7 +254,7 @@ const Upload = () => {
 
                         <input type="file" id="uploadFile" className="hidden" onChange={handleFileChange} />
                         <p className="text-sm font-medium text-[#717182] mt-2">
-                            Or click to browse and select files from your computer.
+                            or click to browse — we accept TD, Rogers, CMB.
                         </p>
      
                         <div className="flex items-center gap-2 mt-3">

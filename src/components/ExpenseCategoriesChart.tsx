@@ -10,18 +10,25 @@ type Props = {
     total?: number;
 };
 
-type ActiveShapeProps = {
-    cx: number;
-    cy: number;
-    innerRadius: number;
-    outerRadius: number;
-    startAngle: number;
-    endAngle: number;
-    fill: string;
-};
-
 import { useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from "recharts";
+import type { PieSectorDataItem } from "recharts/types/polar/Pie";
+
+
+const renderActiveShape = (props: PieSectorDataItem) => {
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+    return (
+        <Sector
+            cx={cx}
+            cy={cy}
+            innerRadius={(innerRadius as number) - 2}
+            outerRadius={(outerRadius as number) + 6}
+            startAngle={startAngle}
+            endAngle={endAngle}
+            fill={fill}
+        />
+    );
+};
 
 const COLORS = [
     "#F87171", // red-400
@@ -55,24 +62,9 @@ const ExpenseCategoriesChart = ({ categories, currency, total }: Props) => {
             maximumFractionDigits: 2,
         }).format(minor / 100);
 
-    // Render active (hovered) slice slightly expanded
-    const renderActiveShape = (props: ActiveShapeProps) => {
-        const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props as ActiveShapeProps;
-        return (
-            <Sector
-                cx={cx}
-                cy={cy}
-                innerRadius={innerRadius - 2}
-                outerRadius={outerRadius + 6}
-                startAngle={startAngle}
-                endAngle={endAngle}
-                fill={fill}
-            />
-        );
-    };
-
     return (
-        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm w-full">
+        // <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm w-full">
+        <div className="mf-card p-7 w-full">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold text-gray-900">By category</h3>
@@ -95,11 +87,10 @@ const ExpenseCategoriesChart = ({ categories, currency, total }: Props) => {
                                 paddingAngle={2}
                                 dataKey="value"
                                 stroke="none"
-                                activeIndex={activeIndex ?? undefined}
-                                activeShape={renderActiveShape}
                                 isAnimationActive={false}
                                 onMouseEnter={(_, index) => setActiveIndex(index)}
                                 onMouseLeave={() => setActiveIndex(null)}
+                                {...{ activeIndex: activeIndex ?? undefined, activeShape: renderActiveShape }}
                             >
                                 {data.map((_, index) => (
                                     <Cell
@@ -141,11 +132,11 @@ const ExpenseCategoriesChart = ({ categories, currency, total }: Props) => {
                 </div>
 
                 {/* Legend list */}
-                <div className="flex-1 space-y-3 p-6">
+                <div className="flex-1 space-y-3 pl-6">
                     {data.map((item, index) => (
                         <div
                             key={item.name}
-                            className="flex items-center gap-3 cursor-pointer rounded-lg px-2 py-1 -mx-2 transition-all duration-200"
+                            className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1 -mx-2 transition-all duration-200"
                             style={{
                                 opacity: activeIndex === null || activeIndex === index ? 1 : 0.3,
                                 backgroundColor: activeIndex === index ? "#f9fafb" : "transparent",
@@ -163,11 +154,11 @@ const ExpenseCategoriesChart = ({ categories, currency, total }: Props) => {
                                 {item.name}
                             </span>
                             {/* Percentage */}
-                            <span className="text-sm text-gray-400 w-14 text-right">
+                            <span className="text-sm text-gray-400 w-10 text-right">
                                 {item.percentage.toFixed(1)}%
                             </span>
                             {/* Amount */}
-                            <span className="text-sm font-semibold text-gray-900 w-24 text-right">
+                            <span className="text-sm font-semibold text-ink w-24 text-right tabular-nums">
                                 {formatAmount(item.value)}
                             </span>
                         </div>
