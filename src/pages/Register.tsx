@@ -64,10 +64,10 @@ const Register = () => {
                             <form method="POST" className="space-y-6" onSubmit={handleSubmit}>
                                 {/* Register Title */}
                                 <div>
-                                    <label className="text-3xl font-bold text-green-500">Create an Account</label>
+                                    <label className="text-3xl font-bold text-accent-ink">Create an Account</label>
                                 </div>
 
-                                <hr className="mt-4 border-t-3 border-green-500 w-16 mx-auto"/>
+                                <hr className="mt-4 border-t-3 border-accent-ink w-16 mx-auto"/>
 
                                 {/* First Name */}
                                 <div>
@@ -141,7 +141,7 @@ const Register = () => {
                                 <div>
                                     <button
                                         type="submit"
-                                        className="flex w-full justify-center bg-green-500 rounded-md px-3 py-1.5 border border-green-500 text-sm/6 font-semibold shadow-xs text-white"
+                                        className="flex w-full justify-center bg-accent rounded-md px-3 py-1.5 border text-sm/6 font-semibold text-white"
                                     >
                                         Register
                                     </button>
@@ -150,7 +150,7 @@ const Register = () => {
                         </div>
                     </div>
 
-                    <div className="p-8 bg-green-600">
+                    <div className="p-8 bg-accent">
                         <div className="text-3xl font-bold tracking-wide text-white uppercase"> Welcome!</div>
                         <hr className="mt-4 border-t-3 border-white w-16 mx-auto"/>
                         <p className="mt-6 text-white">
@@ -159,7 +159,7 @@ const Register = () => {
                         <div className="mt-6 flex justify-center">
                             <button
                                 onClick={() => navigate("/login")}
-                                className="flex justify-center bg-green-600 rounded-md px-3 py-1.5 border border-white text-sm/6 text-white font-semibold"
+                                className="flex justify-center bg-accent-tint text-accent-ink rounded-md px-3 py-1.5 text-sm/6 font-semibold"
                             >
                                 Sign In
                             </button>

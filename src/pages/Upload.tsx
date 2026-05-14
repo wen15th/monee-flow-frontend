@@ -241,11 +241,11 @@ const Upload = () => {
                     {/* Upload box */}
                     <label
                         htmlFor="uploadFile"
-                        className="bg-white text-sm font-semibold rounded-lg px-20 py-5
+                        className="bg-accent-soft text-sm font-semibold rounded-lg px-20 py-5
                        flex flex-col items-center justify-center cursor-pointer
-                       border-2 border-gray-300 border-dashed"
+                       border-2 border-accent border-dashed"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 mb-3 fill-gray-400" viewBox="0 0 32 32">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 mb-3 fill-accent" viewBox="0 0 32 32">
                             <path d="M23.75 11.044a7.99 7.99 0 0 0-15.5-.009A8 8 0 0 0 9 27h3a1 1 0 0 0 0-2H9a6 6 0 0 1-.035-12 1.038 1.038 0 0 0 1.1-.854 5.991 5.991 0 0 1 11.862 0A1.08 1.08 0 0 0 23 13a6 6 0 0 1 0 12h-3a1 1 0 0 0 0 2h3a8 8 0 0 0 .75-15.956z" />
                             <path d="M20.293 19.707a1 1 0 0 0 1.414-1.414l-5-5a1 1 0 0 0-1.414 0l-5 5a1 1 0 0 0 1.414 1.414L15 16.414V29a1 1 0 0 0 2 0V16.414z" />
                         </svg>
@@ -262,7 +262,7 @@ const Upload = () => {
                                 type="button"
                                 onClick={() => document.getElementById("uploadFile")?.click()}
                                 disabled={loading}
-                                className="h-8 px-3 py-1 border border-gray-300 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                className="h-8 px-3 py-1 border border-accent-ink rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-50"
                             >
                                 Browse Files
                             </button>
@@ -270,7 +270,7 @@ const Upload = () => {
                             <select
                                 value={selectedBank}
                                 onChange={(e) => setSelectedBank(e.target.value)}
-                                className="h-8 px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-700 focus:outline-none"
+                                className="h-8 px-2 py-1 border border-accent-ink rounded-lg text-xs text-gray-700 focus:outline-none"
                             >
                                 <option value="" disabled>
                                     Select Bank
@@ -284,7 +284,7 @@ const Upload = () => {
                             <select
                                 value={selectedCurrency}
                                 onChange={(e) => setSelectedCurrency(e.target.value as Currency)}
-                                className="h-8 px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-700 focus:outline-none"
+                                className="h-8 px-2 py-1 border border-accent-ink rounded-lg text-xs text-gray-700 focus:outline-none"
                             >
                                 <option value="" disabled>
                                     Currency
@@ -298,12 +298,12 @@ const Upload = () => {
                                 type="button"
                                 onClick={handleUpload}
                                 disabled={loading || !selectedFile || !selectedBank || !selectedCurrency}
-                                className={`h-8 px-4 py-1 rounded-md text-xs font-bold transition
-    ${
-        loading || !selectedFile || !selectedBank || !selectedCurrency
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-green-600 text-white hover:bg-green-700"
-    }`}
+                                className={`w-24 h-8 px-4 py-1 rounded-md text-xs font-bold transition
+                                    ${
+                                        loading || !selectedFile || !selectedBank || !selectedCurrency
+                                            ? "bg-accent-tint text-gray-500 cursor-not-allowed border border-accent-ink"
+                                            : "bg-accent text-white"
+                                    }`}
                             >
                                 Upload
                             </button>

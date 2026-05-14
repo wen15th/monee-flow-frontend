@@ -283,7 +283,7 @@ const Dashboard = ()=> {
         <div className="flex flex-wrap gap-2 relative">
             <button
                 type="button"
-                className={`inline-flex items-center gap-2 rounded-lg border text-sm font-medium transition-colors ${
+                className={`inline-flex px-4 items-center gap-2 rounded-lg border text-sm font-medium transition-colors ${
                     isThisMonthActive
                         ? "bg-accent text-white"
                         : "border-gray-200 bg-white text-gray-700"
@@ -307,7 +307,7 @@ const Dashboard = ()=> {
             <div className="relative inline-flex" ref={filterPanelRef}>
                 <button
                     type="button"
-                    className={`inline-flex items-center gap-2 rounded-lg border text-sm font-medium transition-colors ${
+                    className={`inline-flex items-center gap-2 px-4 rounded-lg border text-sm font-medium transition-colors ${
                         isFilterActive
                             ? "border-accent bg-accent text-white "
                             : "border-gray-200 bg-white text-gray-700"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { User, BarChart3, Upload } from "lucide-react";
 import { useCurrency, type Currency } from "../context/CurrencyContext";
@@ -14,6 +14,23 @@ export const Header = () => {
         navigate("/logout");
     };
     const isActive = (path: string) => location.pathname === path;
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Node;
+            const menu = document.getElementById("profile-menu");
+            if (menu && !menu.contains(target) && menuOpen) {
+                setMenuOpen(false);
+            }
+        };
+
+        if (menuOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [menuOpen]);
 
     return (
         <header className="sticky top-0 z-50 flex items-center justify-between px-9 py-4 border-b border-border bg-white/80 backdrop-blur-md">
@@ -82,20 +99,16 @@ export const Header = () => {
                         </svg>
                     </div>
 
-                    {/*<div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-500">*/}
-                    {/*    <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">*/}
-                    {/*        <path d="M5.5 7.5l4.5 5 4.5-5h-9z" />*/}
-                    {/*    </svg>*/}
-                    {/*</div>*/}
                 </div>
 
                 {/* Profile menu */}
-                <div className="relative">
+                <div className="relative" id="profile-menu">
                     <button
                         onClick={() => setMenuOpen(!menuOpen)}
-                        className="py-2 rounded-full hover:bg-accent-tint transition"
+                        // className="py-2 rounded-full bg-accent-tint hover:bg-accent-tint transition"
+                        className="w-10 h-10 p-0 flex items-center justify-center rounded-full bg-accent-tint hover:bg-accent-soft transition"
                     >
-                        <User className="w-4 h-4 text-gray-700" />
+                        <User className="w-4 h-4 text-accent-ink font-bold" />
                     </button>
 
                     {menuOpen && (
