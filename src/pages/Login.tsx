@@ -127,7 +127,7 @@ export const Login = () => {
                         </p>
                         <div className="mt-6 flex justify-center">
                             <button
-                                className="flex justify-center bg-accent-tint rounded-md text-sm/6 text-accent-ink font-semibold hover:bg-accent-soft"
+                                className="flex justify-center bg-accent-tint rounded-md text-sm/6 px-3 py-1.5 text-accent-ink font-semibold hover:bg-accent-soft"
                                 onClick={() => navigate("/signup")}
                             >
                                 Sign Up
