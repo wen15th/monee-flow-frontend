@@ -6,6 +6,7 @@ import ExpenseCategoriesChart from "../components/ExpenseCategoriesChart";
 import { getCurrentMonthRange } from "../utils/date";
 
 type Category = {
+    id: number;
     category: string;
     amount: number;
     percentage: number;
@@ -23,6 +24,7 @@ type SummaryResponse = {
 type FilterParams = {
     start_date?: string;
     end_date?: string;
+    category_id?: string;
     min_amount_out?: string;
     max_amount_out?: string;
 };
@@ -79,8 +81,10 @@ const Dashboard = ()=> {
             return getCurrentMonthRange();
         }
     });
-    // Transactions state
+    const [selectedCategoryId, setSelectedCategoryId] = useState("");
+    // Transaction state
     const [transactions, setTransactions] = useState<TransactionsResponse | null>(null);
+
     const [transactionsLoading, setTransactionsLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -89,6 +93,7 @@ const Dashboard = ()=> {
     const [localFilters, setLocalFilters] = useState<FilterParams>({
         start_date: "",
         end_date: "",
+        category_id: "",
         min_amount_out: "",
         max_amount_out: "",
     });
@@ -156,13 +161,10 @@ const Dashboard = ()=> {
                 if (filterParams.end_date) {
                     params.append("end_date", filterParams.end_date);
                 }
-                // Amount range filters disabled for now
-                // if (filterParams.min_amount_out) {
-                //     params.append("min_amount_out", filterParams.min_amount_out);
-                // }
-                // if (filterParams.max_amount_out) {
-                //     params.append("max_amount_out", filterParams.max_amount_out);
-                // }
+                // Add category filter
+                if (selectedCategoryId) {
+                    params.append("category_id", selectedCategoryId);
+                }
                 // Add pagination params
                 params.append("page", currentPage.toString());
                 params.append("page_size", pageSize.toString());
@@ -188,7 +190,7 @@ const Dashboard = ()=> {
         if (accessToken) {
             fetchTransactions();
         }
-    }, [filterParams, currentPage, pageSize, accessToken, displayCurrency]);
+    }, [filterParams, selectedCategoryId, currentPage, pageSize, accessToken, displayCurrency]);
 
     // Sync local filters with filter params when opening the panel
     useEffect(() => {
@@ -242,7 +244,7 @@ const Dashboard = ()=> {
         setFilterParams({
             start_date: localFilters.start_date,
             end_date: localFilters.end_date,
-            // min_amount_out and max_amount_out disabled for now
+            category_id: localFilters.category_id,
         });
         setIsFilterOpen(false);
         setCurrentPage(1); // Reset to first page when filters change
@@ -496,6 +498,34 @@ const Dashboard = ()=> {
                                 <option value={50}>50</option>
                             </select>
                             <span className="text-sm text-gray-600">per page</span>
+                        </div>
+                        <div className="relative flex items-center gap-2">
+                            <select
+                                value={selectedCategoryId}
+                                onChange={(e) => {
+                                    setSelectedCategoryId(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="
+                                    h-9 rounded-full border border-border bg-surface
+                                    px-3 pr-7 text-sm font-medium text-ink-2 text-center
+                                    hover:bg-surface-2 hover:border-border-2
+                                    focus:outline-none focus:ring-2 focus:ring-accent-soft focus:border-accent
+                                    appearance-none transition-all cursor-pointer
+                                "
+                            >
+                                <option value="">All Categories</option>
+                                {summary.expenses.categories.map((category) => (
+                                    <option key={category.id} value={category.id}>
+                                        {category.category}
+                                    </option>
+                                ))}
+                            </select>
+                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-2">
+                                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                                </svg>
+                            </span>
                         </div>
                     </div>
 
