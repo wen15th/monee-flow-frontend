@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useCurrency } from "../context/CurrencyContext";
-import { Calendar, Filter, Check } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import ExpenseCategoriesChart from "../components/ExpenseCategoriesChart";
 import { getCurrentMonthRange } from "../utils/date";
 
@@ -82,30 +82,20 @@ const Dashboard = ()=> {
         }
     });
     const [selectedCategoryId, setSelectedCategoryId] = useState("");
+    const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+    const [pickerYear, setPickerYear] = useState(() => {
+        const s = filterParams.start_date;
+        return s ? parseInt(s.slice(0, 4)) : new Date().getFullYear();
+    });
+    const monthPickerRef = useRef<HTMLDivElement>(null);
     // Transaction state
     const [transactions, setTransactions] = useState<TransactionsResponse | null>(null);
 
     const [transactionsLoading, setTransactionsLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
-    // Local filter form state
-    const [localFilters, setLocalFilters] = useState<FilterParams>({
-        start_date: "",
-        end_date: "",
-        category_id: "",
-        min_amount_out: "",
-        max_amount_out: "",
-    });
-    const filterPanelRef = useRef<HTMLDivElement>(null);
 
     const { accessToken } = useAuth();
-    // Overview: Month
-    const today = new Date();
-    const formattedDate = today.toLocaleDateString("en-CA", {
-        year: "numeric",
-        month: "long",
-    });
 
     const minorToMajor = (minor: number) => minor / 100;
 
@@ -192,41 +182,16 @@ const Dashboard = ()=> {
         }
     }, [filterParams, selectedCategoryId, currentPage, pageSize, accessToken, displayCurrency]);
 
-    // Sync local filters with filter params when opening the panel
     useEffect(() => {
-        if (isFilterOpen) {
-            setLocalFilters({
-                start_date: filterParams.start_date || "",
-                end_date: filterParams.end_date || "",
-                min_amount_out: filterParams.min_amount_out || "",
-                max_amount_out: filterParams.max_amount_out || "",
-            });
-        }
-    }, [isFilterOpen]);
-
-    // Close filter panel when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (
-                filterPanelRef.current &&
-                !filterPanelRef.current.contains(event.target as Node) &&
-                isFilterOpen
-            ) {
-                setIsFilterOpen(false);
+        if (!isMonthPickerOpen) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (monthPickerRef.current && !monthPickerRef.current.contains(e.target as Node)) {
+                setIsMonthPickerOpen(false);
             }
         };
-
-        if (isFilterOpen) {
-            // Use setTimeout to avoid closing immediately when clicking the button
-            setTimeout(() => {
-                document.addEventListener("mousedown", handleClickOutside);
-            }, 0);
-        }
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [isFilterOpen]);
+        setTimeout(() => document.addEventListener("mousedown", handleClickOutside), 0);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [isMonthPickerOpen]);
 
     // Persist applied filters so refresh keeps the current selection
     useEffect(() => {
@@ -240,22 +205,6 @@ const Dashboard = ()=> {
         }
     }, [filterParams]);
 
-    const handleApplyFilters = () => {
-        setFilterParams({
-            start_date: localFilters.start_date,
-            end_date: localFilters.end_date,
-            category_id: localFilters.category_id,
-        });
-        setIsFilterOpen(false);
-        setCurrentPage(1); // Reset to first page when filters change
-    };
-
-    const handleClearFilters = () => {
-        // Clear filters in panel only (don't apply yet)
-        const currentMonthRange = getCurrentMonthRange();
-        setLocalFilters(currentMonthRange);
-    };
-
     if (loading) {
         return <div className="p-10">Loading dashboard...</div>;
     }
@@ -268,181 +217,91 @@ const Dashboard = ()=> {
     const hasNoRecords = summary.expenses.total === 0 || 
                         (summary.expenses.categories && summary.expenses.categories.length === 0);
 
-    // Check if custom filters are applied (not default This Month)
-    const hasCustomFilters = () => {
-        const currentMonthRange = getCurrentMonthRange();
-        const hasAmountFilters = !!filterParams.min_amount_out || !!filterParams.max_amount_out;
-        const hasCustomDateRange = filterParams.start_date !== currentMonthRange.start_date || 
-                                   filterParams.end_date !== currentMonthRange.end_date;
-        return hasAmountFilters || hasCustomDateRange;
-    };
-
-    const isFilterActive = hasCustomFilters();
-    const isThisMonthActive = !isFilterActive;
-
-    // Render filter buttons section (reused in both cases)
-    const renderFilterSection = () => (
-        <div className="flex flex-wrap gap-2 relative">
-            <button
-                type="button"
-                className={`inline-flex px-4 items-center gap-2 rounded-lg border text-sm font-medium transition-colors ${
-                    isThisMonthActive
-                        ? "bg-accent text-white"
-                        : "border-gray-200 bg-white text-gray-700"
-                }`}
-                aria-label="Select month"
-                onClick={() => {
-                    const range = getCurrentMonthRange();
-                    setFilterParams(range);
-                    setLocalFilters((prev) => ({
-                        ...prev,
-                        ...range,
-                    }));
-                    setCurrentPage(1);
-                }}
-            >
-                <Calendar className="h-4 w-4" />
-                <span>This Month</span>
-                {isThisMonthActive && <Check className="h-4 w-4" />}
-            </button>
-
-            <div className="relative inline-flex" ref={filterPanelRef}>
-                <button
-                    type="button"
-                    className={`inline-flex items-center gap-2 px-4 rounded-lg border text-sm font-medium transition-colors ${
-                        isFilterActive
-                            ? "border-accent bg-accent text-white "
-                            : "border-gray-200 bg-white text-gray-700"
-                    }`}
-                    aria-label="Open filters"
-                    onClick={() => setIsFilterOpen(!isFilterOpen)}
-                >
-                    <Filter className="h-4 w-4" />
-                    <span>Filter</span>
-                    {isFilterActive && <Check className="h-4 w-4" />}
-                </button>
-
-                {/* Filter Panel */}
-                {isFilterOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-10 p-4">
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-3">Filters</h3>
-                            
-                            {/* Date Range */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Date Range</label>
-                                <div className="space-y-2">
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Start Date</label>
-                                        <input
-                                            type="date"
-                                            value={localFilters.start_date || ""}
-                                            onChange={(e) =>
-                                                setLocalFilters((prev) => ({
-                                                    ...prev,
-                                                    start_date: e.target.value,
-                                                }))
-                                            }
-                                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">End Date</label>
-                                        <input
-                                            type="date"
-                                            value={localFilters.end_date || ""}
-                                            onChange={(e) =>
-                                                setLocalFilters((prev) => ({
-                                                    ...prev,
-                                                    end_date: e.target.value,
-                                                }))
-                                            }
-                                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Amount Range (disabled for now)
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">
-                                    Amount Range ({displayCurrency})
-                                </label>
-                                <div className="space-y-2">
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Min Amount</label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">
-                                                {displayCurrency}
-                                            </span>
-                                            <input
-                                                type="text"
-                                                value={localFilters.min_amount_out || ""}
-                                                onChange={(e) =>
-                                                    handleAmountInputChange("min_amount_out", e.target.value)
-                                                }
-                                                placeholder="0"
-                                                className="w-full rounded-lg border border-gray-300 pl-14 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Max Amount</label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">
-                                                {displayCurrency}
-                                            </span>
-                                            <input
-                                                type="text"
-                                                value={localFilters.max_amount_out || ""}
-                                                onChange={(e) =>
-                                                    handleAmountInputChange("max_amount_out", e.target.value)
-                                                }
-                                                placeholder="0"
-                                                className="w-full rounded-lg border border-gray-300 pl-14 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            */}
-
-                            {/* Action Buttons */}
-                            <div className="flex gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={handleClearFilters}
-                                    className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                                >
-                                    Clear
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleApplyFilters}
-                                    className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                                >
-                                    Apply
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-
     return (
         <>
             <div className="container max-w-5xl pb-10 mx-auto">
                 {/* Title & Filtering */}
-                <div className="flex my-10 justify-between">
+                <div className="flex my-10 justify-between items-center">
                     {/* Overview */}
                     <div className="flex flex-col items-start">
                         <h2 className="font-display text-2xl font-semibold">Overview</h2>
-                        <p className="text-sm font-medium text-[#717182]">{formattedDate}</p>
+                        <p className="text-sm font-medium text-[#717182]">
+                            {filterParams.start_date
+                                ? new Date(filterParams.start_date + "T00:00:00").toLocaleDateString("en-CA", { year: "numeric", month: "long" })
+                                : new Date().toLocaleDateString("en-CA", { year: "numeric", month: "long" })}
+                        </p>
                     </div>
-                    {/* Filtering */}
-                    {renderFilterSection()}
+                    {/* Month picker */}
+                    <div className="relative" ref={monthPickerRef}>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const y = filterParams.start_date ? parseInt(filterParams.start_date.slice(0, 4)) : new Date().getFullYear();
+                                setPickerYear(y);
+                                setIsMonthPickerOpen((o) => !o);
+                            }}
+                            className="h-9 flex items-center !rounded-full border border-border bg-surface pl-5 pr-7 text-sm font-medium text-ink-2 hover:bg-surface-2 hover:border-border-2 focus:outline-none focus:ring-2 focus:ring-accent-soft transition-all cursor-pointer"
+                        >
+                            {filterParams.start_date
+                                ? new Date(filterParams.start_date + "T00:00:00").toLocaleDateString("en-CA", { year: "numeric", month: "short" })
+                                : new Date().toLocaleDateString("en-CA", { year: "numeric", month: "short" })}
+                        </button>
+                        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-2">
+                            <ChevronDown className="h-3.5 w-3.5" />
+                        </span>
+
+                        {isMonthPickerOpen && (
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-surface border border-border rounded-2xl shadow-lg z-20 p-3">
+                                {/* Year nav */}
+                                <div className="flex items-center justify-between mb-2 px-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPickerYear((y) => y - 1)}
+                                        className="p-1 rounded-md hover:bg-surface-2 text-ink-2 transition-colors"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </button>
+                                    <span className="text-sm font-semibold text-ink">{pickerYear}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPickerYear((y) => y + 1)}
+                                        className="p-1 rounded-md hover:bg-surface-2 text-ink-2 transition-colors"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </button>
+                                </div>
+                                {/* Month grid */}
+                                <div className="grid grid-cols-3 gap-1">
+                                    {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((name, i) => {
+                                        const ym = `${pickerYear}-${String(i + 1).padStart(2, "0")}`;
+                                        const isSelected = ym === filterParams.start_date?.slice(0, 7);
+                                        return (
+                                            <button
+                                                key={name}
+                                                type="button"
+                                                onClick={() => {
+                                                    const start = new Date(pickerYear, i, 1);
+                                                    const end = new Date(pickerYear, i + 1, 0);
+                                                    const fmt = (d: Date) => d.toISOString().split("T")[0];
+                                                    setFilterParams({ start_date: fmt(start), end_date: fmt(end) });
+                                                    setSelectedCategoryId("");
+                                                    setCurrentPage(1);
+                                                    setIsMonthPickerOpen(false);
+                                                }}
+                                                className={`rounded-lg py-1.5 text-sm font-medium transition-colors ${
+                                                    isSelected
+                                                        ? "bg-accent text-white"
+                                                        : "text-ink-2 hover:bg-surface-2"
+                                                }`}
+                                            >
+                                                {name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {hasNoRecords ? (
